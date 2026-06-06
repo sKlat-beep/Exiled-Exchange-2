@@ -16,7 +16,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Kvan7/exiled-exchange-2.git"
+    "url": "https://github.com/sKlat-beep/Exiled-Exchange-2.git"
   },
   "main": "dist/main.js",
   "dependencies": {
