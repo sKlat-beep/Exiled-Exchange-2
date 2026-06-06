@@ -1,10 +1,18 @@
 import path from "path";
 import { app, Tray, Menu, shell, nativeImage, dialog } from "electron";
 import type { ServerEvents } from "./server";
+import type { UpdateInfo } from "../../ipc/types";
+
+interface UpdaterTrayActions {
+  checkNow: () => void;
+  installAndRestart: () => void;
+}
 
 export class AppTray {
-  public overlayKey = "Shift + Space";
+  private _overlayKey = "Shift + Space";
   private tray: Tray;
+  private updaterActions: UpdaterTrayActions | null = null;
+  private updaterInfo: UpdateInfo = { state: "initial" };
   serverPort = 0;
 
   constructor(server: ServerEvents) {
@@ -33,6 +41,25 @@ export class AppTray {
     });
   }
 
+  get overlayKey() {
+    return this._overlayKey;
+  }
+
+  set overlayKey(value: string) {
+    this._overlayKey = value;
+    this.rebuildMenu();
+  }
+
+  setUpdaterActions(actions: UpdaterTrayActions) {
+    this.updaterActions = actions;
+    this.rebuildMenu();
+  }
+
+  setUpdaterInfo(info: UpdateInfo) {
+    this.updaterInfo = info;
+    this.rebuildMenu();
+  }
+
   rebuildMenu() {
     const contextMenu = Menu.buildFromTemplate([
       {
@@ -51,6 +78,8 @@ export class AppTray {
         },
       },
       { type: "separator" },
+      this.createUpdateMenuItem(),
+      { type: "separator" },
       {
         label: "Open config folder",
         click: () => {
@@ -66,5 +95,39 @@ export class AppTray {
     ]);
 
     this.tray.setContextMenu(contextMenu);
+  }
+
+  private createUpdateMenuItem(): Electron.MenuItemConstructorOptions {
+    switch (this.updaterInfo.state) {
+      case "checking-for-update":
+        return {
+          label: "Checking for Updates...",
+          enabled: false,
+        };
+      case "update-available":
+        if (this.updaterInfo.noDownloadReason === null) {
+          return {
+            label: `Downloading Update ${this.updaterInfo.version}...`,
+            enabled: false,
+          };
+        }
+        return {
+          label: `Check for Updates (${this.updaterInfo.version} found)`,
+          enabled: this.updaterActions !== null,
+          click: () => this.updaterActions?.checkNow(),
+        };
+      case "update-downloaded":
+        return {
+          label: `Update Now (${this.updaterInfo.version})`,
+          enabled: this.updaterActions !== null,
+          click: () => this.updaterActions?.installAndRestart(),
+        };
+      default:
+        return {
+          label: "Check for Updates",
+          enabled: this.updaterActions !== null,
+          click: () => this.updaterActions?.checkNow(),
+        };
+    }
   }
 }

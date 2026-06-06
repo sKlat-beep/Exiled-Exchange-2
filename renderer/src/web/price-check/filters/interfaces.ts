@@ -32,7 +32,7 @@ export interface ItemFilters {
     trade: string;
   };
   rarity?: {
-    value: string;
+    value: TradeRarityOption;
   };
   socketNumber?: FilterNumeric;
   linkedSockets?: FilterNumeric;
@@ -105,6 +105,14 @@ export interface ItemFilters {
     int?: FilterNumeric;
   };
 }
+
+export type TradeRarityOption =
+  | "normal"
+  | "magic"
+  | "rare"
+  | "unique"
+  | "nonunique"
+  | "uniquefoil";
 
 export interface FilterNumeric {
   value: number;

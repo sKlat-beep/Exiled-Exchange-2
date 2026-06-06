@@ -8,6 +8,7 @@ import type { ItemCheckWidget } from "./item-check/widget";
 import type { ItemSearchWidget } from "./item-search/widget";
 import { registry as widgetRegistry } from "./overlay/widget-registry.js";
 import { LibraryWidget } from "./library/widget";
+import { normalizeConfigHotkeys } from "./config-hotkeys";
 
 const _config = shallowRef<Config | null>(null);
 let _lastSavedConfig: Config | null = null;
@@ -156,7 +157,7 @@ export interface Config {
 }
 
 export const defaultConfig = (): Config => ({
-  configVersion: 31,
+  configVersion: 33,
   overlayKey: "Shift + Space",
   overlayBackground: "rgba(129, 139, 149, 0.15)",
   overlayBackgroundClose: true,
@@ -230,7 +231,7 @@ export const defaultConfig = (): Config => ({
   readClientLog: false, // default to false, opt-in only
 });
 
-function upgradeConfig(_config: Config): Config {
+export function upgradeConfig(_config: Config): Config {
   /* eslint-disable @typescript-eslint/no-explicit-any */
   const config = _config as Omit<Config, "widgets"> & {
     widgets: Array<Record<string, any>>;
@@ -648,10 +649,26 @@ function upgradeConfig(_config: Config): Config {
 
     config.configVersion = 31;
   }
+
+  if (config.configVersion < 32) {
+    normalizeConfigHotkeys(config);
+    config.configVersion = 32;
+  }
+
+  if (config.configVersion < 33) {
+    const priceCheck = config.widgets.find(
+      (w) => w.wmType === "price-check",
+    ) as widget.PriceCheckWidget;
+    priceCheck.matchItemRarity = false;
+    priceCheck.modifierCountMode = "off";
+
+    config.configVersion = 33;
+  }
   /* eslint-enable */
 
   return config as unknown as Config;
 }
+
 
 function getConfigForHost(): HostConfig {
   const actions: ShortcutAction[] = [];

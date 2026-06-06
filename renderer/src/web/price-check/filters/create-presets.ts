@@ -29,6 +29,8 @@ export function createPresets(
     useEn: boolean;
     defaultAllSelected: boolean;
     autoFillEmptyAugmentSockets: PriceCheckWidget["autoFillEmptyRuneSockets"];
+    matchItemRarity: boolean;
+    modifierCountMode: PriceCheckWidget["modifierCountMode"];
   },
 ): { presets: FilterPreset[]; active: string } {
   if (item.info.refName === "Expedition Logbook") {

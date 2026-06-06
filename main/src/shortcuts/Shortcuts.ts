@@ -2,8 +2,9 @@ import { screen, globalShortcut } from "electron";
 import { uIOhook, UiohookKey, UiohookWheelEvent } from "uiohook-napi";
 import {
   isModKey,
-  KeyToElectron,
   mergeTwoHotkeys,
+  normalizeHotkey,
+  hotkeyToString,
 } from "../../../ipc/KeyToCode";
 import { typeInChat, stashSearch } from "./text-box";
 import { WidgetAreaTracker } from "../windowing/WidgetAreaTracker";
@@ -25,6 +26,8 @@ export class Shortcuts {
   private actions: ShortcutAction[] = [];
   private stashScroll = false;
   private logKeys = false;
+  private isRegistered = false;
+  private registeredAccelerators = new Set<string>();
   private areaTracker: WidgetAreaTracker;
   private clipboard: HostClipboard;
 
@@ -59,6 +62,7 @@ export class Shortcuts {
     this.clipboard = new HostClipboard(logger);
 
     this.poeWindow.on("active-change", (isActive) => {
+      this.logger.write(`debug [Shortcuts] Game active-change: ${isActive}`);
       process.nextTick(() => {
         if (isActive === this.poeWindow.isActive) {
           if (isActive) {
@@ -126,6 +130,10 @@ export class Shortcuts {
       });
     }
 
+    this.logger.write(
+      `debug [Shortcuts] Host config received with ${actions.length} shortcut actions.`,
+    );
+
     const allShortcuts = new Set([
       "Ctrl + C",
       "Ctrl + V",
@@ -140,6 +148,19 @@ export class Shortcuts {
       "ArrowLeft",
       copyItemShortcut,
     ]);
+
+    const validActions: ShortcutAction[] = [];
+    for (const action of actions) {
+      const normalized = normalizeHotkey(action.shortcut);
+      if (!normalized.isValid) {
+        this.logger.write(
+          `error [Shortcuts] Hotkey "${action.shortcut}" is invalid: ${normalized.errors.join(", ")}.`,
+        );
+        continue;
+      }
+      validActions.push({ ...action, shortcut: normalized.value });
+    }
+    actions = validActions;
 
     for (const action of actions) {
       if (
@@ -164,17 +185,39 @@ export class Shortcuts {
         allShortcuts.add(action.shortcut);
       }
     }
+    const wasRegistered = this.isRegistered;
+    if (wasRegistered) {
+      this.unregister();
+    }
+
     this.actions = actions.filter(
       (action) =>
         !duplicates.has(action.shortcut) ||
         action.action.type === "toggle-overlay",
     );
+
+    if (this.poeWindow.isActive) {
+      this.register();
+    }
   }
 
   private register() {
+    if (this.isRegistered) return;
+    this.logger.write(
+      `debug [Shortcuts] Registering ${this.actions.length} shortcut actions.`,
+    );
+
     for (const entry of this.actions) {
+      const accelerator = shortcutToElectron(entry.shortcut);
+      if (!accelerator) {
+        this.logger.write(
+          `error [Shortcuts] Hotkey "${entry.shortcut}" is invalid and will not be registered.`,
+        );
+        continue;
+      }
+
       const isOk = globalShortcut.register(
-        shortcutToElectron(entry.shortcut),
+        accelerator,
         () => {
           if (this.logKeys) {
             this.logger.write(
@@ -276,13 +319,23 @@ export class Shortcuts {
       }
 
       if (entry.action.type === "test-only") {
-        globalShortcut.unregister(shortcutToElectron(entry.shortcut));
+        globalShortcut.unregister(accelerator);
+      } else if (isOk) {
+        this.registeredAccelerators.add(accelerator);
       }
     }
+    this.isRegistered = true;
   }
 
   private unregister() {
-    globalShortcut.unregisterAll();
+    this.logger.write(
+      `debug [Shortcuts] Unregistering ${this.registeredAccelerators.size} shortcut actions.`,
+    );
+    for (const accelerator of this.registeredAccelerators) {
+      globalShortcut.unregister(accelerator);
+    }
+    this.registeredAccelerators.clear();
+    this.isRegistered = false;
   }
 }
 
@@ -345,20 +398,10 @@ function eventToString(e: {
 
   if (code === "Shift" || code === "Alt" || code === "Ctrl") return code;
 
-  if (ctrlKey && shiftKey && altKey) code = `Ctrl + Shift + Alt + ${code}`;
-  else if (shiftKey && altKey) code = `Shift + Alt + ${code}`;
-  else if (ctrlKey && shiftKey) code = `Ctrl + Shift + ${code}`;
-  else if (ctrlKey && altKey) code = `Ctrl + Alt + ${code}`;
-  else if (altKey) code = `Alt + ${code}`;
-  else if (ctrlKey) code = `Ctrl + ${code}`;
-  else if (shiftKey) code = `Shift + ${code}`;
-
-  return code;
+  return hotkeyToString([code], ctrlKey, shiftKey, altKey);
 }
 
-function shortcutToElectron(shortcut: string) {
-  return shortcut
-    .split(" + ")
-    .map((k) => KeyToElectron[k as keyof typeof KeyToElectron])
-    .join("+");
+function shortcutToElectron(shortcut: string): string | null {
+  const normalized = normalizeHotkey(shortcut);
+  return normalized.isValid ? normalized.accelerator : null;
 }

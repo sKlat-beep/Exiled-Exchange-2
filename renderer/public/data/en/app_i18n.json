@@ -427,6 +427,12 @@
     "always_show_tier": "Always show tier",
     "remember_ratio": "Remember currency ratio",
     "remember_listing": "Remember listing type",
+    "match_item_rarity": "Match item rarity",
+    "match_modifier_count": "Match modifier count",
+    "mod_count_off": "Off",
+    "mod_count_same_total": "Same total mods",
+    "mod_count_same_prefix_suffix": "Same prefix and suffix count",
+    "mod_count_same_open_affixes": "Same open affixes",
     "open_editor_above": "Open rune socket selector upwards",
     "core_currency": "Primary base currency:",
     "show_volume": "Show Currency Exchange volume per hour:"

@@ -238,6 +238,8 @@ export default defineComponent({
         coreCurrency: "exalted",
         currencyVolume: "both",
         rememberListingType: false,
+        matchItemRarity: false,
+        modifierCountMode: "off",
       };
     },
   } satisfies WidgetSpec,

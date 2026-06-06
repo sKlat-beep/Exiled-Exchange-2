@@ -112,6 +112,26 @@
     <ui-checkbox class="mb-4" v-model="activateStockFilter">{{
       t(":select_stock")
     }}</ui-checkbox>
+    <ui-checkbox class="mb-4" v-model="matchItemRarity">{{
+      t(":match_item_rarity")
+    }}</ui-checkbox>
+    <div class="mb-4">
+      <div class="flex-1 mb-1">{{ t(":match_modifier_count") }}</div>
+      <div class="mb-1 flex flex-col gap-1 items-start">
+        <ui-radio v-model="modifierCountMode" value="off">{{
+          t(":mod_count_off")
+        }}</ui-radio>
+        <ui-radio v-model="modifierCountMode" value="same-total">{{
+          t(":mod_count_same_total")
+        }}</ui-radio>
+        <ui-radio v-model="modifierCountMode" value="same-prefix-suffix">{{
+          t(":mod_count_same_prefix_suffix")
+        }}</ui-radio>
+        <ui-radio v-model="modifierCountMode" value="same-open-affixes">{{
+          t(":mod_count_same_open_affixes")
+        }}</ui-radio>
+      </div>
+    </div>
     <div class="mb-4">
       <div class="flex-1 mb-1">{{ t(":show_volume") }}</div>
       <div class="mb-1 flex">
@@ -310,6 +330,14 @@ export default defineComponent({
       rememberListingType: configModelValue(
         () => configWidget.value,
         "rememberListingType",
+      ),
+      matchItemRarity: configModelValue(
+        () => configWidget.value,
+        "matchItemRarity",
+      ),
+      modifierCountMode: configModelValue(
+        () => configWidget.value,
+        "modifierCountMode",
       ),
       coreCurrency: configModelValue(() => configWidget.value, "coreCurrency"),
       currencyVolume: configModelValue(

@@ -65,6 +65,8 @@ export type UpdateInfo =
       checkedAt: number;
     };
 
+export type UpdaterAction = "check-for-update" | "update-and-restart";
+
 export interface HostState {
   contents: string | null;
   version: string;
@@ -207,7 +209,7 @@ type IpcUpdaterState = Event<"MAIN->CLIENT::updater-state", UpdateInfo>;
 type IpcUserAction = Event<
   "CLIENT->MAIN::user-action",
   | {
-      action: "check-for-update" | "update-and-restart" | "quit";
+      action: UpdaterAction | "quit";
     }
   | {
       action: "stash-search";

@@ -80,6 +80,33 @@ describe("unidentified item tests", () => {
   });
 });
 
+describe("rarity filters", () => {
+  it("keeps rare items broad by default", () => {
+    const item: ParsedItem = {
+      ...createTestItem(),
+      rarity: ItemRarity.Rare,
+    };
+
+    const res = createFilters(item, createTestCreateOptions());
+
+    expect(res.rarity?.value).toBe("nonunique");
+  });
+
+  it("can match rare item rarity exactly", () => {
+    const item: ParsedItem = {
+      ...createTestItem(),
+      rarity: ItemRarity.Rare,
+    };
+
+    const res = createFilters(item, {
+      ...createTestCreateOptions(),
+      matchItemRarity: true,
+    });
+
+    expect(res.rarity?.value).toBe("rare");
+  });
+});
+
 describe("Ascendancy Points calcs", () => {
   it.each([
     ["Inscribed Ultimatum", 1, 1],

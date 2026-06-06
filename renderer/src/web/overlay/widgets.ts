@@ -35,6 +35,12 @@ export interface WidgetMenu extends Widget {
   alwaysShow: boolean;
 }
 
+export type PriceCheckModifierCountMode =
+  | "off"
+  | "same-total"
+  | "same-prefix-suffix"
+  | "same-open-affixes";
+
 export interface PriceCheckWidget extends Widget {
   hotkey: string | null;
   hotkeyHold: string;
@@ -59,6 +65,8 @@ export interface PriceCheckWidget extends Widget {
   coreCurrency: "exalted" | "chaos";
   currencyVolume: "none" | "value" | "item" | "both";
   rememberListingType: boolean;
+  matchItemRarity: boolean;
+  modifierCountMode: PriceCheckModifierCountMode;
 }
 
 export interface StopwatchWidget extends Widget {

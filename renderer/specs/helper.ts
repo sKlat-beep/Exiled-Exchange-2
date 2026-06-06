@@ -22,9 +22,11 @@ export function createTestCreateOptions(): {
   searchStatRange: number;
   exact: boolean;
   useEn: boolean;
-  defaultAllSelected: boolean;
-  autoFillEmptyAugmentSockets: PriceCheckWidget["autoFillEmptyRuneSockets"];
-} {
+    defaultAllSelected: boolean;
+    autoFillEmptyAugmentSockets: PriceCheckWidget["autoFillEmptyRuneSockets"];
+    matchItemRarity: boolean;
+    modifierCountMode: PriceCheckWidget["modifierCountMode"];
+  } {
   return {
     league: "Standard",
     currency: undefined,
@@ -36,6 +38,8 @@ export function createTestCreateOptions(): {
     useEn: true,
     defaultAllSelected: false,
     autoFillEmptyAugmentSockets: false,
+    matchItemRarity: false,
+    modifierCountMode: "off",
   };
 }
 

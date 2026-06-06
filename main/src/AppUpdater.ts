@@ -1,6 +1,8 @@
 import { autoUpdater } from "electron-updater";
 import type { ServerEvents } from "./server";
-import type { UpdateInfo } from "../../ipc/types";
+import type { UpdateInfo, UpdaterAction } from "../../ipc/types";
+
+type UpdateInfoChange = (info: UpdateInfo) => void;
 
 export class AppUpdater {
   private _checkedAtStartup = false;
@@ -21,17 +23,17 @@ export class AppUpdater {
       name: "MAIN->CLIENT::updater-state",
       payload: info,
     });
+    this.onInfoChange?.(info);
   }
 
-  constructor(private server: ServerEvents) {
+  constructor(
+    private server: ServerEvents,
+    private onInfoChange?: UpdateInfoChange,
+  ) {
     setInterval(this.check, 16 * 60 * 60 * 1000);
 
     this.server.onEventAnyClient("CLIENT->MAIN::user-action", ({ action }) => {
-      if (action === "check-for-update") {
-        this.check();
-      } else if (action === "update-and-restart") {
-        autoUpdater.quitAndInstall(false);
-      }
+      this.handleUserAction(action);
     });
 
     // https://www.electron.build/configuration/nsis.html#portable
@@ -70,6 +72,24 @@ export class AppUpdater {
     if (!this._checkedAtStartup) {
       this._checkedAtStartup = true;
       this.check();
+    }
+  }
+
+  handleUserAction(action: UpdaterAction | string) {
+    if (action === "check-for-update") {
+      this.checkNow();
+    } else if (action === "update-and-restart") {
+      this.installAndRestart();
+    }
+  }
+
+  checkNow() {
+    this.check();
+  }
+
+  installAndRestart() {
+    if (this.info.state === "update-downloaded") {
+      autoUpdater.quitAndInstall(false);
     }
   }
 

@@ -6,6 +6,7 @@ import {
   InternalTradeId,
   ItemIsElementalModifier,
   FilterTag,
+  TradeRarityOption,
 } from "../filters/interfaces";
 import { setProperty as propSet } from "dot-prop";
 import { DateTime } from "luxon";
@@ -86,14 +87,11 @@ export const CATEGORY_TO_TRADE_ID = new Map([
   [ItemCategory.Waystone, "map.waystone"],
 ]);
 
-const TOTAL_MODS_TEXT = {
-  EMPTY_MODIFIERS: [
-    "# Empty Modifiers",
-    "# Empty Prefix Modifiers",
-    "# Empty Suffix Modifiers",
-  ],
-  TOTAL_MODIFIERS: ["# Modifiers", "# Prefix Modifiers", "# Suffix Modifiers"],
-};
+const EMPTY_MODIFIER_TRADE_IDS = [
+  "pseudo.pseudo_number_of_empty_affix_mods",
+  "pseudo.pseudo_number_of_empty_prefix_mods",
+  "pseudo.pseudo_number_of_empty_suffix_mods",
+] as const;
 
 // const INFLUENCE_PSEUDO_TEXT = {
 //   [ItemInfluence.Shaper]: 'Has Shaper Influence',
@@ -284,7 +282,7 @@ interface TradeRequest {
       type_filters?: {
         filters: {
           rarity?: {
-            option?: "nonunique" | "uniquefoil";
+            option?: TradeRarityOption;
           };
           category?: {
             option?: string;
@@ -842,9 +840,7 @@ export function createTradeRequest(
   for (const stat of stats) {
     if (stat.tradeId[0] === "item.has_empty_modifier") {
       const TARGET_ID = {
-        EMPTY_MODIFIERS: STAT_BY_REF(
-          TOTAL_MODS_TEXT.EMPTY_MODIFIERS[stat.option!.value],
-        )!.trade.ids[ModifierType.Pseudo][0],
+        EMPTY_MODIFIERS: EMPTY_MODIFIER_TRADE_IDS[stat.option!.value],
       };
       const emptyRoll = stat.roll!;
       query.stats.push({

@@ -7,6 +7,7 @@ import {
 import type { ServerEvents } from "../server";
 import type { Logger } from "../RemoteLogger";
 import type { GameWindow } from "./GameWindow";
+import { hotkeyToString, normalizeHotkey, normalizeKeyName } from "../../../ipc/KeyToCode";
 
 export class OverlayWindow {
   public isInteractable = false;
@@ -110,7 +111,15 @@ export class OverlayWindow {
   };
 
   updateOpts(overlayKey: string, windowTitle: string) {
-    this.overlayKey = overlayKey;
+    const normalized = normalizeHotkey(overlayKey);
+    if (normalized.isValid) {
+      this.overlayKey = normalized.value;
+    } else {
+      this.overlayKey = overlayKey;
+      this.logger.write(
+        `error [Overlay] Overlay key "${overlayKey}" is invalid: ${normalized.errors.join(", ")}.`,
+      );
+    }
     this.poeWindow.attach(this.window, windowTitle);
   }
 
@@ -122,18 +131,12 @@ export class OverlayWindow {
 
     let { code, control: ctrlKey, shift: shiftKey, alt: altKey } = input;
 
-    if (code.startsWith("Key")) {
-      code = code.slice("Key".length);
-    } else if (code.startsWith("Digit")) {
-      code = code.slice("Digit".length);
-    }
-
-    if (shiftKey && altKey) code = `Shift + Alt + ${code}`;
-    else if (ctrlKey && shiftKey) code = `Ctrl + Shift + ${code}`;
-    else if (ctrlKey && altKey) code = `Ctrl + Alt + ${code}`;
-    else if (altKey) code = `Alt + ${code}`;
-    else if (ctrlKey) code = `Ctrl + ${code}`;
-    else if (shiftKey) code = `Shift + ${code}`;
+    code = hotkeyToString(
+      [normalizeKeyName(code)],
+      ctrlKey,
+      shiftKey,
+      altKey,
+    );
 
     switch (code) {
       case "Escape":
@@ -164,6 +167,7 @@ export class OverlayWindow {
           "You need to restart Exiled Exchange 2 with administrator rights.",
       );
     } else {
+      this.logger.write("info [Overlay] Attached to PoE2 window");
       this.server.sendEventTo("broadcast", {
         name: "MAIN->OVERLAY::overlay-attached",
         payload: undefined,

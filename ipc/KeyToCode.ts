@@ -224,7 +224,87 @@ export const KeyToElectron = {
   Shift: 'Shift'
 }
 
+const KeyAliases: Record<string, string> = {
+  // Electron and browser input events call the tilde/backtick key Backquote.
+  Tilde: 'Backquote',
+  Grave: 'Backquote',
+  '`': 'Backquote'
+}
+
+const KeyByLowerName = Object.fromEntries(
+  Object.keys(KeyToCode).map(key => [key.toLowerCase(), key])
+) as Record<string, string>
+
+export type HotkeyValidation =
+  | {
+      isValid: true
+      value: string
+      keys: string[]
+      accelerator: string
+    }
+  | {
+      isValid: false
+      value: string
+      errors: string[]
+    }
+
+export function normalizeKeyName (key: string): string {
+  if (KeyAliases[key]) return KeyAliases[key]
+
+  if (key.startsWith('Key')) return normalizeKeyName(key.slice('Key'.length))
+  if (key.startsWith('Digit')) return normalizeKeyName(key.slice('Digit'.length))
+
+  if (key.length === 1) {
+    const upper = key.toUpperCase()
+    if (KeyByLowerName[upper.toLowerCase()]) return KeyByLowerName[upper.toLowerCase()]
+  }
+
+  return KeyByLowerName[key.toLowerCase()] ?? key
+}
+
+export function normalizeHotkey (hotkey: string): HotkeyValidation {
+  const rawParts = hotkey.split('+').map(part => part.trim())
+  const errors: string[] = []
+
+  if (rawParts.some(part => part.length === 0)) {
+    errors.push('Hotkey contains an empty key part')
+  }
+
+  const normalizedParts = rawParts
+    .filter(part => part.length > 0)
+    .map(part => normalizeKeyName(part))
+
+  for (const part of normalizedParts) {
+    if (!(part in KeyToCode) || !(part in KeyToElectron)) {
+      errors.push(`Unsupported key "${part}"`)
+    }
+  }
+
+  const nonModKeys = normalizedParts.filter(part => !isModKey(part))
+  if (nonModKeys.length === 0) {
+    errors.push('Hotkey must include a non-modifier key')
+  }
+
+  if (errors.length > 0) {
+    return { isValid: false, value: hotkey, errors }
+  }
+
+  const value = hotkeyToString(Array.from(new Set(normalizedParts)))
+  const accelerator = value
+    .split(' + ')
+    .map(k => KeyToElectron[k as keyof typeof KeyToElectron])
+    .join('+')
+
+  return {
+    isValid: true,
+    value,
+    keys: value.split(' + '),
+    accelerator
+  }
+}
+
 export function hotkeyToString (keys: string[], ctrl = false, shift = false, alt = false): string {
+  keys = keys.map(key => normalizeKeyName(key))
   if (keys.includes('Ctrl')) ctrl = true
   if (keys.includes('Shift')) shift = true
   if (keys.includes('Alt')) alt = true
@@ -245,10 +325,12 @@ export function hotkeyToString (keys: string[], ctrl = false, shift = false, alt
 }
 
 export function mergeTwoHotkeys (str1: string, str2: string): string {
-  return hotkeyToString(Array.from(new Set([
+  const merged = hotkeyToString(Array.from(new Set([
     ...str1.split(' + '),
     ...str2.split(' + ')
   ])))
+  const normalized = normalizeHotkey(merged)
+  return normalized.isValid ? normalized.value : merged
 }
 
 export function isModKey (key: string) {

@@ -56,6 +56,18 @@
           text="Normal"
         />
         <filter-btn-logical
+          v-if="filters.rarity?.value === 'rare'"
+          readonly
+          :filter="{ disabled: false }"
+          text="Rare"
+        />
+        <filter-btn-logical
+          v-if="filters.rarity?.value === 'nonunique'"
+          readonly
+          :filter="{ disabled: false }"
+          text="Nonunique"
+        />
+        <filter-btn-logical
           v-if="filters.discriminator?.value"
           readonly
           :filter="{ disabled: false }"

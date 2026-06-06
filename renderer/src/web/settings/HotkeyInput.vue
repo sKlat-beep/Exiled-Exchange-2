@@ -11,7 +11,7 @@
 <script lang="ts">
 import { defineComponent, PropType } from "vue";
 import { useI18n } from "vue-i18n";
-import { KeyToCode, hotkeyToString } from "@ipc/KeyToCode";
+import { KeyToCode, hotkeyToString, normalizeKeyName } from "@ipc/KeyToCode";
 
 export default defineComponent({
   emits: ["update:modelValue"],
@@ -54,6 +54,8 @@ export default defineComponent({
         } else if (e.key === "Cancel" && code === "Pause") {
           code = "Cancel";
         }
+
+        code = normalizeKeyName(code);
 
         if ((KeyToCode as Record<string, number>)[code]) {
           code = hotkeyToString([code], ctrlKey, shiftKey, altKey);

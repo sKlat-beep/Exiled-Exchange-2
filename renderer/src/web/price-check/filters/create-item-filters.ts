@@ -37,6 +37,7 @@ interface CreateOptions {
   exact: boolean;
   useEn: boolean;
   autoFillEmptyAugmentSockets: PriceCheckWidget["autoFillEmptyRuneSockets"];
+  matchItemRarity?: boolean;
 }
 
 export function createFilters(
@@ -342,10 +343,14 @@ export function createFilters(
     filters.rarity = {
       value: "magic",
     };
+  } else if (opts.matchItemRarity && item.rarity === ItemRarity.Rare) {
+    filters.rarity = {
+      value: "rare",
+    };
   } else if (
     item.rarity === ItemRarity.Normal &&
     item.info.refName !== "Idol of Estazunti" &&
-    opts.exact
+    (opts.exact || opts.matchItemRarity)
   ) {
     // Since chance orbs only work on normal items
     filters.rarity = {
@@ -353,7 +358,7 @@ export function createFilters(
     };
   } else if (
     item.rarity === ItemRarity.Magic &&
-    opts.exact &&
+    (opts.exact || opts.matchItemRarity) &&
     // Ignore tablet since they should be compared to rare ones
     item.category !== ItemCategory.Tablet
   ) {
